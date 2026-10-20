@@ -1,0 +1,5 @@
+client
+server
+*.o
+.DS_Store
+received_files/

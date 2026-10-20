@@ -24,7 +24,26 @@ uint32_t calculateChecksum(const std::string& fileName) {
 
     return checksum;
 }
+bool sendAll(int socket, const char* data, int totalBytes) {
+    int bytesSent = 0;
 
+    while (bytesSent < totalBytes) {
+        int result = send(
+            socket,
+            data + bytesSent,
+            totalBytes - bytesSent,
+            0
+        );
+
+        if (result <= 0) {
+            return false;
+        }
+
+        bytesSent += result;
+    }
+
+    return true;
+}
 int main() {
     std::cout << "[SERVER] Program started." << std::endl;
 
@@ -177,12 +196,12 @@ int main() {
     std::cout << "[SERVER] Checksum verified successfully." << std::endl;
 
     std::string result = "SUCCESS";
-    send(clientSocket, result.c_str(), result.size(), 0);
+    sendAll(clientSocket, result.c_str(), result.size());
 } else {
     std::cout << "[SERVER] Checksum verification failed." << std::endl;
 
     std::string result = "CHECKSUM_ERROR";
-    send(clientSocket, result.c_str(), result.size(), 0);
+    sendAll(clientSocket, result.c_str(), result.size());
 }
 
     close(clientSocket);

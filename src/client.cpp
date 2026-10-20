@@ -24,7 +24,26 @@ uint32_t calculateChecksum(const std::string& fileName) {
 
     return checksum;
 }
+bool sendAll(int socket, const char* data, int totalBytes) {
+    int bytesSent = 0;
 
+    while (bytesSent < totalBytes) {
+        int result = send(
+            socket,
+            data + bytesSent,
+            totalBytes - bytesSent,
+            0
+        );
+
+        if (result <= 0) {
+            return false;
+        }
+
+        bytesSent += result;
+    }
+
+    return true;
+}
 int main() {
     std::cout << "[CLIENT] Program started." << std::endl;
 
@@ -89,8 +108,7 @@ int main() {
         std::to_string(fileSize) + "\n" +
         std::to_string(checksum) + "\n";
 
-    if (send(clientSocket, fileInfo.c_str(), fileInfo.size(), 0) == -1) {
-        std::cerr << "[CLIENT] File information could not be sent." << std::endl;
+if (!sendAll(clientSocket, fileInfo.c_str(), fileInfo.size())) {        std::cerr << "[CLIENT] File information could not be sent." << std::endl;
         file.close();
         close(clientSocket);
         return 1;
@@ -103,7 +121,7 @@ int main() {
     while (file.read(buffer, sizeof(buffer)) || file.gcount() > 0) {
         int bytesToSend = file.gcount();
 
-        if (send(clientSocket, buffer, bytesToSend, 0) == -1) {
+        if (!sendAll(clientSocket, buffer, bytesToSend)) {
             std::cerr << "[CLIENT] File transfer failed." << std::endl;
             file.close();
             close(clientSocket);

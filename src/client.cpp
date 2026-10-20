@@ -59,7 +59,10 @@ int main() {
 
     std::cout << "[CLIENT] Connected to server successfully." << std::endl;
 
-    std::string fileName = "test.txt";
+    std::string fileName;
+
+    std::cout << "[CLIENT] Enter file name: ";
+    std::getline(std::cin, fileName);
 
     std::ifstream file(fileName, std::ios::binary);
 

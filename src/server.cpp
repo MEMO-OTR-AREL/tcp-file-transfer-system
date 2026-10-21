@@ -24,6 +24,7 @@ uint32_t calculateChecksum(const std::string& fileName) {
 
     return checksum;
 }
+
 bool sendAll(int socket, const char* data, int totalBytes) {
     int bytesSent = 0;
 
@@ -44,6 +45,34 @@ bool sendAll(int socket, const char* data, int totalBytes) {
 
     return true;
 }
+
+void decodeFileInfo(
+    const std::string& fileInfo,
+    std::string& fileName,
+    long long& fileSize,
+    uint32_t& checksum
+) {
+    size_t firstNewLine = fileInfo.find('\n');
+    size_t secondNewLine = fileInfo.find('\n', firstNewLine + 1);
+    size_t thirdNewLine = fileInfo.find('\n', secondNewLine + 1);
+
+    fileName = fileInfo.substr(0, firstNewLine);
+
+    fileSize = std::stoll(
+        fileInfo.substr(
+            firstNewLine + 1,
+            secondNewLine - firstNewLine - 1
+        )
+    );
+
+    checksum = std::stoul(
+        fileInfo.substr(
+            secondNewLine + 1,
+            thirdNewLine - secondNewLine - 1
+        )
+    );
+}
+
 int main() {
     std::cout << "[SERVER] Program started." << std::endl;
 
@@ -58,20 +87,30 @@ int main() {
 
     sockaddr_in serverAddress{};
 
+    int serverPort;
+
+    std::cout << "[SERVER] Enter port: ";
+    std::cin >> serverPort;
+
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(8080);
+    serverAddress.sin_port = htons(serverPort);
     serverAddress.sin_addr.s_addr = INADDR_ANY;
 
-    if (bind(serverSocket,
-             (struct sockaddr*)&serverAddress,
-             sizeof(serverAddress)) == -1) {
-
+    if (bind(
+        serverSocket,
+        (struct sockaddr*)&serverAddress,
+        sizeof(serverAddress)
+    ) == -1) {
         std::cerr << "[SERVER] Bind failed." << std::endl;
         close(serverSocket);
         return 1;
     }
 
-    std::cout << "[SERVER] Socket bound to port 8080." << std::endl;
+    std::cout
+        << "[SERVER] Socket bound to port "
+        << serverPort
+        << "."
+        << std::endl;
 
     if (listen(serverSocket, 5) == -1) {
         std::cerr << "[SERVER] Listen failed." << std::endl;
@@ -98,7 +137,10 @@ int main() {
         int bytesReceived = recv(clientSocket, infoBuffer, 1, 0);
 
         if (bytesReceived <= 0) {
-            std::cerr << "[SERVER] File information could not be received." << std::endl;
+            std::cerr
+                << "[SERVER] File information could not be received."
+                << std::endl;
+
             close(clientSocket);
             close(serverSocket);
             return 1;
@@ -119,24 +161,15 @@ int main() {
         }
     }
 
-    size_t firstNewLine = fileInfo.find('\n');
-    size_t secondNewLine = fileInfo.find('\n', firstNewLine + 1);
-    size_t thirdNewLine = fileInfo.find('\n', secondNewLine + 1);
+    std::string fileName;
+    long long fileSize;
+    uint32_t clientChecksum;
 
-    std::string fileName = fileInfo.substr(0, firstNewLine);
-
-    long long fileSize = std::stoll(
-        fileInfo.substr(
-            firstNewLine + 1,
-            secondNewLine - firstNewLine - 1
-        )
-    );
-
-    uint32_t clientChecksum = std::stoul(
-        fileInfo.substr(
-            secondNewLine + 1,
-            thirdNewLine - secondNewLine - 1
-        )
+    decodeFileInfo(
+        fileInfo,
+        fileName,
+        fileSize,
+        clientChecksum
     );
 
     std::cout << "[SERVER] File name: " << fileName << std::endl;
@@ -168,11 +201,16 @@ int main() {
             bytesToReceive = sizeof(buffer);
         }
 
-        int bytesReceived =
-            recv(clientSocket, buffer, bytesToReceive, 0);
+        int bytesReceived = recv(
+            clientSocket,
+            buffer,
+            bytesToReceive,
+            0
+        );
 
         if (bytesReceived <= 0) {
             std::cerr << "[SERVER] File transfer failed." << std::endl;
+
             outputFile.close();
             close(clientSocket);
             close(serverSocket);
@@ -193,16 +231,30 @@ int main() {
     std::cout << "[SERVER] Server checksum: " << serverChecksum << std::endl;
 
     if (clientChecksum == serverChecksum) {
-    std::cout << "[SERVER] Checksum verified successfully." << std::endl;
+        std::cout
+            << "[SERVER] Checksum verified successfully."
+            << std::endl;
 
-    std::string result = "SUCCESS";
-    sendAll(clientSocket, result.c_str(), result.size());
-} else {
-    std::cout << "[SERVER] Checksum verification failed." << std::endl;
+        std::string result = "SUCCESS";
 
-    std::string result = "CHECKSUM_ERROR";
-    sendAll(clientSocket, result.c_str(), result.size());
-}
+        sendAll(
+            clientSocket,
+            result.c_str(),
+            result.size()
+        );
+    } else {
+        std::cout
+            << "[SERVER] Checksum verification failed."
+            << std::endl;
+
+        std::string result = "CHECKSUM_ERROR";
+
+        sendAll(
+            clientSocket,
+            result.c_str(),
+            result.size()
+        );
+    }
 
     close(clientSocket);
     close(serverSocket);

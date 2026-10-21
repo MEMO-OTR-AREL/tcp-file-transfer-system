@@ -44,6 +44,16 @@ bool sendAll(int socket, const char* data, int totalBytes) {
 
     return true;
 }
+std::string encodeFileInfo(
+    const std::string& fileName,
+    long long fileSize,
+    uint32_t checksum
+) {
+    return fileName + "\n" +
+           std::to_string(fileSize) + "\n" +
+           std::to_string(checksum) + "\n";
+}
+
 int main() {
     std::cout << "[CLIENT] Program started." << std::endl;
 
@@ -55,13 +65,22 @@ int main() {
     }
 
     std::cout << "[CLIENT] Socket created successfully." << std::endl;
+    std::string serverIP;
+    int serverPort;
+
+    std::cout << "[CLIENT] Enter server IP: ";
+    std::getline(std::cin, serverIP);
+
+    std::cout << "[CLIENT] Enter server port: ";
+    std::cin >> serverPort;
+    std::cin.ignore();
 
     sockaddr_in serverAddress{};
 
     serverAddress.sin_family = AF_INET;
-    serverAddress.sin_port = htons(8080);
+    serverAddress.sin_port = htons(serverPort);
 
-    if (inet_pton(AF_INET, "127.0.0.1", &serverAddress.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, serverIP.c_str() , &serverAddress.sin_addr) <= 0) {
         std::cerr << "[CLIENT] Invalid IP address." << std::endl;
         close(clientSocket);
         return 1;
@@ -103,10 +122,13 @@ int main() {
 
     std::cout << "[CLIENT] Checksum: " << checksum << std::endl;
 
-    std::string fileInfo =
-        fileName + "\n" +
-        std::to_string(fileSize) + "\n" +
-        std::to_string(checksum) + "\n";
+    std::string fileInfo = encodeFileInfo(
+        fileName,
+        fileSize,
+        checksum
+
+    );
+        
 
 if (!sendAll(clientSocket, fileInfo.c_str(), fileInfo.size())) {        std::cerr << "[CLIENT] File information could not be sent." << std::endl;
         file.close();

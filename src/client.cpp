@@ -138,7 +138,8 @@ if (!sendAll(clientSocket, fileInfo.c_str(), fileInfo.size())) {        std::cer
 
     std::cout << "[CLIENT] File information sent successfully." << std::endl;
 
-    char buffer[1024];
+    const int chunkSize = 1024;
+    char buffer[chunkSize];
 
     while (file.read(buffer, sizeof(buffer)) || file.gcount() > 0) {
         int bytesToSend = file.gcount();

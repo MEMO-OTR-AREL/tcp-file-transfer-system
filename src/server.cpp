@@ -24,6 +24,9 @@ uint32_t calculateChecksum(const std::string& fileName) {
 
     return checksum;
 }
+bool verifyChecksum(uint32_t clientChecksum, uint32_t serverChecksum) {
+    return clientChecksum == serverChecksum;
+}
 
 bool sendAll(int socket, const char* data, int totalBytes) {
     int bytesSent = 0;
@@ -176,7 +179,8 @@ int main() {
     std::cout << "[SERVER] File size: " << fileSize << " bytes" << std::endl;
     std::cout << "[SERVER] Client checksum: " << clientChecksum << std::endl;
 
-    std::string savePath = "received_files/" + fileName;
+    std::string saveDirectory = "received_files7";
+    std::string savePath = saveDirectory + fileName;
 
     std::ofstream outputFile(savePath, std::ios::binary);
 
@@ -187,7 +191,8 @@ int main() {
         return 1;
     }
 
-    char buffer[1024];
+    const int chunkSize = 1024;
+    char buffer[chunkSize];
     long long totalBytesReceived = 0;
 
     while (totalBytesReceived < fileSize) {
@@ -230,7 +235,7 @@ int main() {
 
     std::cout << "[SERVER] Server checksum: " << serverChecksum << std::endl;
 
-    if (clientChecksum == serverChecksum) {
+    if (verifyChecksum(clientChecksum, serverChecksum)) {
         std::cout
             << "[SERVER] Checksum verified successfully."
             << std::endl;

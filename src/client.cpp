@@ -148,6 +148,7 @@ if (!sendAll(clientSocket, fileInfo.c_str(), fileInfo.size())) {        std::cer
 
     const int chunkSize = 1024;
     char buffer[chunkSize];
+    long long totalBytesSent = 0;
 
     while (file.read(buffer, sizeof(buffer)) || file.gcount() > 0) {
         int bytesToSend = file.gcount();
@@ -158,6 +159,10 @@ if (!sendAll(clientSocket, fileInfo.c_str(), fileInfo.size())) {        std::cer
             close(clientSocket);
             return 1;
         }
+        totalBytesSent += bytesToSend;
+
+        int progress = static_cast<int>((totalBytesSent * 100) / fileSize);
+        std::cout << "[CLIENT] Transfer progress: " << progress << "%" << std::endl;
     }
 
     std::cout << "[CLIENT] File sent successfully." << std::endl;

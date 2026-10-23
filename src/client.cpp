@@ -118,8 +118,16 @@ int main() {
 
     std::cout << "[CLIENT] File size: " << fileSize << " bytes" << std::endl;
 
-    uint32_t checksum = calculateChecksum(fileName);
+    size_t dotPosition = fileName.find_last_of('.');
+    std::string fileType = "unknown";
 
+    if (dotPosition != std::string::npos) {
+    fileType = fileName.substr(dotPosition);
+    }
+
+std::cout << "[CLIENT] File type: " << fileType << std::endl;
+
+    uint32_t checksum = calculateChecksum(fileName);
     std::cout << "[CLIENT] Checksum: " << checksum << std::endl;
 
     std::string fileInfo = encodeFileInfo(
